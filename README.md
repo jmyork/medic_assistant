@@ -114,7 +114,7 @@ npm start
 - Consideração de histórico e predisposições
 - Identificação de padrões e correlações
 
-### 4. Geração de Relatório
+<!-- ### 4. Geração de Relatório
 ```json
 {
   "diagnostico_tendencial": "Possível condição X baseado em sintomas A, B, C",
@@ -134,7 +134,7 @@ npm start
     "Monitorar sintoma Y devido histórico familiar"
   ]
 }
-```
+``` -->
 
 ## 🔧 API Endpoints Principais
 
