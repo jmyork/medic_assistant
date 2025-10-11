@@ -1,4 +1,4 @@
-# 🩺 Medical Assistant - AI-Powered Health Advisor
+# 🩺 Medical Assistant
 
 Um sistema inteligente de assistência médica que analisa sintomas, histórico do paciente e fatores de risco para fornecer recomendações personalizadas de saúde usando a MERN Stack.
 
