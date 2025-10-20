@@ -199,7 +199,7 @@ Este sistema é uma ferramenta de apoio à decisão médica e não substitui o d
 
 ## 📞 Suporte
 
-Para suporte técnico ou dúvidas sobre o sistema, entre em contato através do email: suporte@medicalassistant.com
+Para suporte técnico ou dúvidas sobre o sistema, entre em contato através do email: josemanuelbaptistatest@gmail.com
 
 ---
 
