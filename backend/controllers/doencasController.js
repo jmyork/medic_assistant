@@ -1,43 +1,45 @@
 const Doencas = require('../model/Doencas');
 
-exports.create = async (req, res, next) => {
+async function create(req, res, next) {
     try {
         if (!req.body.nome) return res.status(400).json({ message: 'nome é obrigatório' });
         const d = new Doencas(req.body);
         await d.save();
-        res.status(201).json(d);
+        return res.status(201).json({ data: d, message: 'Doença criada com sucesso' });
     } catch (err) {
         next(err);
     }
-};
+}
 
-exports.list = async (req, res, next) => {
+async function list(req, res, next) {
     try {
         const all = await Doencas.find().lean();
-        res.json(all);
+        return res.status(200).json({ data: all, message: 'Lista de doenças obtida com sucesso' });
     } catch (err) { next(err); }
-};
+}
 
-exports.get = async (req, res, next) => {
+async function get(req, res, next) {
     try {
         const doc = await Doencas.findById(req.params.id).lean();
-        if (!doc) return res.status(404).json({ message: 'Doença não encontrada' });
-        res.json(doc);
+        if (!doc) return res.status(404).json({ data: null, message: 'Doença não encontrada' });
+        return res.status(200).json({ data: doc, message: 'Doença obtida com sucesso' });
     } catch (err) { next(err); }
-};
+}
 
-exports.update = async (req, res, next) => {
+async function update(req, res, next) {
     try {
         const updated = await Doencas.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        if (!updated) return res.status(404).json({ message: 'Doença não encontrada' });
-        res.json(updated);
+        if (!updated) return res.status(404).json({ data: null, message: 'Doença não encontrada' });
+        return res.status(200).json({ data: updated, message: 'Doença atualizada com sucesso' });
     } catch (err) { next(err); }
-};
+}
 
-exports.remove = async (req, res, next) => {
+async function remove(req, res, next) {
     try {
         const removed = await Doencas.findByIdAndDelete(req.params.id);
-        if (!removed) return res.status(404).json({ message: 'Doença não encontrada' });
-        res.status(204).send();
+        if (!removed) return res.status(404).json({ data: null, message: 'Doença não encontrada' });
+        return res.status(204).send();
     } catch (err) { next(err); }
-};
+}
+
+module.exports = { create, list, get, update, remove };

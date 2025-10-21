@@ -5,7 +5,7 @@ const Users = require('../model/Users');
 // - ao criar um médico, user deve existir e ser do tipo 'medico'
 // - especialidade é obrigatória
 
-exports.create = async (req, res, next) => {
+async function create(req, res, next) {
     try {
         const { user, especialidade } = req.body;
         if (!user) return res.status(400).json({ message: 'user é obrigatório' });
@@ -17,33 +17,33 @@ exports.create = async (req, res, next) => {
 
         const medico = new Medicos(req.body);
         await medico.save();
-        res.status(201).json(medico);
+        return res.status(201).json({ data: medico, message: 'Médico criado com sucesso' });
     } catch (err) {
         next(err);
     }
-};
+}
 
-exports.list = async (req, res, next) => {
+async function list(req, res, next) {
     try {
         const medicos = await Medicos.find().populate('user', 'nome email').lean();
-        res.json(medicos);
+        return res.status(200).json({ data: medicos, message: 'Lista de médicos obtida com sucesso' });
     } catch (err) {
         next(err);
     }
-};
+}
 
-exports.get = async (req, res, next) => {
+async function get(req, res, next) {
     try {
         const { id } = req.params;
         const medico = await Medicos.findById(id).populate('user', 'nome email').lean();
-        if (!medico) return res.status(404).json({ message: 'Médico não encontrado' });
-        res.json(medico);
+        if (!medico) return res.status(404).json({ data: null, message: 'Médico não encontrado' });
+        return res.status(200).json({ data: medico, message: 'Médico obtido com sucesso' });
     } catch (err) {
         next(err);
     }
-};
+}
 
-exports.update = async (req, res, next) => {
+async function update(req, res, next) {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -53,21 +53,23 @@ exports.update = async (req, res, next) => {
             if (userDoc.tipo !== 'medico') return res.status(400).json({ message: "user não é do tipo 'medico'" });
         }
         const medico = await Medicos.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
-        if (!medico) return res.status(404).json({ message: 'Médico não encontrado' });
-        res.json(medico);
+        if (!medico) return res.status(404).json({ data: null, message: 'Médico não encontrado' });
+        return res.status(200).json({ data: medico, message: 'Médico atualizado com sucesso' });
     } catch (err) {
         next(err);
     }
-};
+}
 
-exports.remove = async (req, res, next) => {
+async function remove(req, res, next) {
     try {
         const { id } = req.params;
         // Não removemos user aqui, apenas o registro de médico
         const removed = await Medicos.findByIdAndDelete(id);
-        if (!removed) return res.status(404).json({ message: 'Médico não encontrado' });
-        res.status(204).send();
+        if (!removed) return res.status(404).json({ data: null, message: 'Médico não encontrado' });
+        return res.status(204).send();
     } catch (err) {
         next(err);
     }
-};
+}
+
+module.exports = { create, list, get, update, remove };
