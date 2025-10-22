@@ -18,7 +18,7 @@ async function create(req, res, next) {
 async function list(req, res, next) {
     try {
         const all = await Exames.find().lean();
-        res.json(all);
+        res.json({data:all,message:"Lista de exames obtida com sucesso" });
     } catch (err) {
         next(err);
     }
@@ -28,7 +28,7 @@ async function get(req, res, next) {
     try {
         const exame = await Exames.findById(req.params.id).lean();
         if (!exame) return res.status(404).json({ message: 'Exame não encontrado' });
-        res.json(exame);
+        res.json({data:exame,message:"Exame obtido com sucesso" });
     } catch (err) {
         next(err);
     }
@@ -38,7 +38,7 @@ async function update(req, res, next) {
     try {
         const updated = await Exames.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!updated) return res.status(404).json({ message: 'Exame não encontrado' });
-        res.json(updated);
+        res.json({data:updated,message:"Exame atualizado com sucesso" });
     } catch (err) {
         next(err);
     }

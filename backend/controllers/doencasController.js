@@ -5,7 +5,7 @@ async function create(req, res, next) {
         if (!req.body.nome) return res.status(400).json({ message: 'nome é obrigatório' });
         const d = new Doencas(req.body);
         await d.save();
-        return res.status(201).json({ data: d, message: 'Doença criada com sucesso' });
+        return res.status(201).json({ data: d, message: 'Doença Registra com sucesso' });
     } catch (err) {
         next(err);
     }
