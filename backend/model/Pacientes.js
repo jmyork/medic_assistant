@@ -10,7 +10,7 @@ const PacienteSchema = new mongoose.Schema({
   contacto: { type: String },
   endereco: { type: String },
   número_seguranca_social: { type: String },
-
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   documento: { type: String, unique: true },
   documento_identificacao_tipo: { type: String, enum: ['BI', 'CC', 'Passaporte'] },
 

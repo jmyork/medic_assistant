@@ -8,6 +8,8 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@tensorflow/tfjs": "^4.22.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
@@ -15,8 +17,7 @@
     "express": "^4.21.2",
     "http-errors": "~1.6.3",
     "jsonwebtoken": "^9.0.0",
-    "mongoose": "^8.19.2",
-    "@faker-js/faker": "^8.0.2"
+    "mongoose": "^8.19.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

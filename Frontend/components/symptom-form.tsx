@@ -1,14 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { User, AlertCircle, LogOut, FileText, Stethoscope, Search } from "lucide-react";
+import {
+  User,
+  AlertCircle,
+  LogOut,
+  FileText,
+  Stethoscope,
+  Search,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { api } from "@/services";
 
 export function SymptomForm() {
   const router = useRouter();
@@ -28,23 +48,42 @@ export function SymptomForm() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState(""); // 🔍 novo estado de pesquisa
 
-  const possibleSymptoms = [
-    "Dor de cabeça",
-    "Náusea",
-    "Tontura",
-    "Febre",
-    "Fadiga",
-    "Tosse",
-    "Dor de garganta",
-    "Congestão nasal",
-    "Dores musculares",
-    "Calafrios",
-  ];
+  const [possibleSymptoms, setPossibleSymptoms] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 🔍 filtra sintomas conforme o texto digitado
   const filteredSymptoms = possibleSymptoms.filter((symptom) =>
     symptom.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Buscar sintomas da API no mount
+  useEffect(() => {
+    let mounted = true;
+    async function loadSymptoms() {
+      setLoading(true);
+      setError(null);
+      try {
+        // (path: string, params?: Params, headers?: Record<string, string>)
+        const res = await api.get("/sintomas", { method: "GET" });
+        if (!res.ok)
+          throw new Error(`Erro ao carregar sintomas: ${res.status}`);
+        const json = await res.json();
+        const items = Array.isArray(json.data) ? json.data : [];
+        const names = items.map((it: any) => it.nome || it.name || String(it));
+        if (mounted) setPossibleSymptoms(names);
+      } catch (err: any) {
+        if (mounted) setError(err.message || "Erro desconhecido");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadSymptoms();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleCheckboxChange = (symptom: string) => {
     setSelectedSymptoms((prev) =>
@@ -108,7 +147,8 @@ export function SymptomForm() {
             <CardHeader>
               <CardTitle className="text-lg">Descrição dos Sintomas</CardTitle>
               <CardDescription className="text-sm">
-                As suas informações ajudam-nos a entender melhor o seu estado de saúde
+                As suas informações ajudam-nos a entender melhor o seu estado de
+                saúde
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -125,7 +165,9 @@ export function SymptomForm() {
               {/* 🔽 Mostra sintomas selecionados */}
               {selectedSymptoms.length > 0 && (
                 <div className="mt-4">
-                  <Label className="text-sm font-medium">Sintomas selecionados:</Label>
+                  <Label className="text-sm font-medium">
+                    Sintomas selecionados:
+                  </Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {selectedSymptoms.map((symptom) => (
                       <span
@@ -141,7 +183,8 @@ export function SymptomForm() {
               {/* 🔼 Fim da nova secção */}
 
               <p className="text-xs text-muted-foreground">
-                Inclua informações com a localização da dor e sintomas associados
+                Inclua informações com a localização da dor e sintomas
+                associados
               </p>
             </CardContent>
           </Card>
@@ -149,13 +192,23 @@ export function SymptomForm() {
           {description.trim().length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Informações Adicionais</CardTitle>
-                <CardDescription>Ajude-nos a entender melhor os seus sintomas</CardDescription>
+                <CardTitle className="text-lg">
+                  Informações Adicionais
+                </CardTitle>
+                <CardDescription>
+                  Ajude-nos a entender melhor os seus sintomas
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label>Intensidade: {intensity[0]}/10</Label>
-                  <Slider value={intensity} onValueChange={setIntensity} max={10} step={1} className="w-full" />
+                  <Slider
+                    value={intensity}
+                    onValueChange={setIntensity}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                  />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Leve</span>
                     <span>Moderada</span>
@@ -164,7 +217,9 @@ export function SymptomForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Há quanto tempo tem estes sintomas?</Label>
+                  <Label htmlFor="duration">
+                    Há quanto tempo tem estes sintomas?
+                  </Label>
                   <Select value={duration} onValueChange={setDuration}>
                     <SelectTrigger id="duration">
                       <SelectValue placeholder="Selecione a duração" />
@@ -180,16 +235,26 @@ export function SymptomForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="frequency">Com que frequência sente estes sintomas?</Label>
+                  <Label htmlFor="frequency">
+                    Com que frequência sente estes sintomas?
+                  </Label>
                   <Select value={frequency} onValueChange={setFrequency}>
                     <SelectTrigger id="frequency">
                       <SelectValue placeholder="Selecione a frequência" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="constant">Constante (o tempo todo)</SelectItem>
-                      <SelectItem value="frequent">Frequente (várias vezes ao dia)</SelectItem>
-                      <SelectItem value="occasional">Ocasional (algumas vezes por semana)</SelectItem>
-                      <SelectItem value="rare">Raro (menos de uma vez por semana)</SelectItem>
+                      <SelectItem value="constant">
+                        Constante (o tempo todo)
+                      </SelectItem>
+                      <SelectItem value="frequent">
+                        Frequente (várias vezes ao dia)
+                      </SelectItem>
+                      <SelectItem value="occasional">
+                        Ocasional (algumas vezes por semana)
+                      </SelectItem>
+                      <SelectItem value="rare">
+                        Raro (menos de uma vez por semana)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -202,12 +267,19 @@ export function SymptomForm() {
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-800">
                 <p className="font-medium">Informações incompletas</p>
-                <p className="text-amber-700">Por favor, preencha a duração e frequência dos sintomas.</p>
+                <p className="text-amber-700">
+                  Por favor, preencha a duração e frequência dos sintomas.
+                </p>
               </div>
             </div>
           )}
 
-          <Button onClick={handleSubmit} className="w-full" size="lg" disabled={!isFormValid}>
+          <Button
+            onClick={handleSubmit}
+            className="w-full"
+            size="lg"
+            disabled={!isFormValid}
+          >
             Enviar Sintomas
           </Button>
         </div>
@@ -229,7 +301,15 @@ export function SymptomForm() {
 
               <div className="space-y-2">
                 <Label>Possíveis Sintomas</Label>
-                {filteredSymptoms.length > 0 ? (
+                {loading ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    Carregando sintomas...
+                  </p>
+                ) : error ? (
+                  <p className="text-sm text-red-600 italic">
+                    Erro ao carregar: {error}
+                  </p>
+                ) : filteredSymptoms.length > 0 ? (
                   filteredSymptoms.map((symptom) => (
                     <div key={symptom} className="flex items-center space-x-2">
                       <Checkbox
@@ -241,7 +321,9 @@ export function SymptomForm() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">Nenhum sintoma encontrado</p>
+                  <p className="text-sm text-muted-foreground italic">
+                    Nenhum sintoma encontrado
+                  </p>
                 )}
               </div>
             </CardContent>

@@ -11,12 +11,17 @@ async function create(req, res, next) {
         const { nome, documento } = req.body;
         if (!nome) return res.status(400).json({ message: 'nome é obrigatório' });
 
+        console.log("req.user:", req.user.id);
         if (documento) {
             const existing = await Pacientes.findOne({ documento });
             if (existing) return res.status(409).json({ message: 'documento já existe' });
         }
+        // verificar se já existe paciente associado ao user
+        if(await Pacientes.findOne({ user: req.user.id })) {
+            return res.status(409).json({ message: 'Paciente já associado a este utilizador' });
+        }
 
-        const paciente = new Pacientes(req.body);
+        const paciente = new Pacientes({...req.body, user: req.user.id });
         await paciente.save();
         res.status(201).json({ data: paciente, message: "Paciente criado com sucesso" });
     } catch (err) {
@@ -48,6 +53,7 @@ async function update(req, res, next) {
     try {
         const { id } = req.params;
         const updates = req.body;
+        
 
         if (updates.documento) {
             const other = await Pacientes.findOne({ documento: updates.documento, _id: { $ne: id } });

@@ -1,10 +1,74 @@
 const Users = require('../model/Users');
 const UserTokens = require('../model/UserTokens');
+const Pacientes = require('../model/Pacientes');
+const Medicos = require('../model/Medicos');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+
+async function register(req, res, next) {
+    try {
+        const { email, password, tipo, nome, ...restoDados } = req.body;
+
+        if (!email || !password || !tipo) {
+            return res.status(400).json({ data: null, message: 'email, password e tipo são obrigatórios' });
+        }
+
+        if (!['paciente', 'medico', 'admin'].includes(tipo)) {
+            return res.status(400).json({ data: null, message: 'tipo deve ser: paciente, medico ou admin' });
+        }
+
+        // Verificar se email já existe
+        const existingUser = await Users.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ data: null, message: 'Email já registado' });
+        }
+
+        // Hash da password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Criar user
+        const user = new Users({
+            email,
+            password: hashedPassword,
+            tipo,
+            nome: nome || email
+        });
+        await user.save();
+
+        // Se for paciente, criar registo de paciente
+        if (tipo === 'paciente') {
+            const paciente = new Pacientes({
+                user: user._id,
+                nome: nome || email,
+                ...restoDados
+            });
+            await paciente.save();
+        }
+
+        // Se for médico, criar registo de médico
+        if (tipo === 'medico') {
+            const medico = new Medicos({
+                user: user._id,
+                ...restoDados
+            });
+            await medico.save();
+        }
+
+        // Gerar token
+        const payload = { id: user._id, tipo: user.tipo };
+        const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
+
+        return res.status(201).json({
+            data: { token, user: { id: user._id, email: user.email, tipo: user.tipo, nome: user.nome } },
+            message: 'Utilizador registado com sucesso'
+        });
+    } catch (err) {
+        next(err);
+    }
+}
 
 async function login(req, res, next) {
     try {
@@ -72,4 +136,4 @@ async function resetPassword(req, res, next) {
     } catch (err) { next(err); }
 }
 
-module.exports = { login, logout, requestPasswordReset, resetPassword };
+module.exports = { login, logout, register, requestPasswordReset, resetPassword };

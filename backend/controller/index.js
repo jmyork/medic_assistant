@@ -2,6 +2,7 @@ module.exports = {
     PacientesController: require('./PacientesController'),
     MedicosController: require('./MedicosController'),
     ConsultasController: require('./ConsultasController'),
+    ConsultaSintomasController:require("./ConsultaSintomasController"),
     ExamesController: require('./ExamesController'),
     MedicamentosController: require('./MedicamentosController'),
     DoencasController: require('./DoencasController'),
@@ -20,4 +21,5 @@ module.exports = {
     SintomasController: require('./SintomasController'),
     UsersController: require('./UsersController'),
     AuthController: require('./AuthController'),
+    
 };

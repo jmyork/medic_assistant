@@ -13,8 +13,38 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
     try {
-        const all = await Sintomas.find().lean();
-        return res.status(200).json({ data: all, message: "Lista de sintomas obtida com sucesso" });
+        // Paginação: ?page=1&limit=20&q=buscar&sort=nome
+        let { page = 1, limit = 20, q, sort } = req.query;
+        page = parseInt(page, 10) || 1;
+        limit = parseInt(limit, 10) || 20;
+        if (page < 1) page = 1;
+        // limitar máximo de itens por página para evitar abusos
+        const MAX_LIMIT = 200;
+        if (limit < 1) limit = 1;
+        if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+
+        const filter = {};
+        if (q && String(q).trim() !== '') {
+            filter.nome = { $regex: String(q).trim(), $options: 'i' };
+        }
+
+        const total = await Sintomas.countDocuments(filter);
+        const pages = Math.max(1, Math.ceil(total / limit));
+        const skip = (page - 1) * limit;
+
+        const sortOption = sort || 'nome';
+        const items = await Sintomas.find(filter).sort(sortOption).skip(skip).limit(limit).lean();
+
+        return res.status(200).json({
+            data: items,
+            meta: {
+                total,
+                page,
+                pages,
+                perPage: limit
+            },
+            message: "Lista de sintomas obtida com sucesso"
+        });
     } catch (err) { next(err); }
 }
 
