@@ -6,8 +6,9 @@ const ConsultasSintomas = require('../model/ConsultaSintomas');
 const Sintomas = require("../model/Sintomas")
 const Doencas = require("../model/Doencas");
 const DoencasSintomas = require('../model/DoencasSintomas');
-// const tf = require('@tensorflow/tfjs-node');
+const Users = require('../model/Users');
 
+// const tf = require('@tensorflow/tfjs-node');
 // Regras principais:
 // - paciente e medico são obrigatórios e devem existir
 // - data_hora é obrigatória; uma vez criada, é imutável (model já define immutable)
@@ -16,13 +17,13 @@ const DoencasSintomas = require('../model/DoencasSintomas');
 async function create(req, res, next) {
     try {
         const { medico } = req.body;
-        const paciente=req.user.paciente._id
+        const paciente = req.user.paciente._id
         // console.log("paciente :", req.user)
-       
+
         // if (!paciente) return res.status(400).json({ data: null, message: 'paciente é obrigatório' });
         // if (!medico) return res.status(400).json({ data: null, message: 'medico é obrigatório' });
         // if (!data_hora) return res.status(400).json({ data: null, message: 'data_hora é obrigatória' }); 
-        const data_hora= new Date();
+        const data_hora = new Date();
 
         const p = await Pacientes.findById(paciente);
         if (!p) return res.status(400).json({ data: null, message: 'paciente não encontrado' });
@@ -36,7 +37,7 @@ async function create(req, res, next) {
                 return res.status(400).json({ data: null, message: 'algumas recomendacoes_medicos não existem' });
         }
 
-        const consulta = new Consultas({...req.body,paciente:paciente, data_hora:data_hora });
+        const consulta = new Consultas({ ...req.body, paciente: paciente, data_hora: data_hora });
         await consulta.save();
         return res.status(201).json({ data: consulta, message: 'Consulta criada com sucesso' });
     } catch (err) {
@@ -168,7 +169,7 @@ async function diagnose(req, res, next) {
             X.push(linha);
             y.push(doencas.findIndex(x => x._id === d._id));
         }
-        
+
 
         const Xtensor = tf.tensor2d(X);
         const ytensor = tf.tensor1d(y, 'int32');
@@ -238,4 +239,115 @@ async function diagnose(req, res, next) {
     }
 }
 
-module.exports = { create, list, get, update, remove, approve, cancel, markAsDone, diagnose };
+async function getValidatedReports(req, res, next) {
+    try {
+        let filter = {}
+        if (req.query.status)
+            filter = { status: { $in: req.query.status.split(",") } }
+
+        // Buscar consultas com status 'realizada' (validadas/aprovadas)
+        const consultas = await Consultas.find(filter).populate('paciente', 'nome')
+            .populate('medico', 'user')
+            .lean();
+        // Formatar os dados conforme esperado pelo frontend
+        const validatedReports = await Promise.all(
+            consultas.map(async (consulta) => {
+                // Buscar sintomas associados à consulta
+                const consultaSintomas = await ConsultasSintomas.find({
+                    consulta: consulta._id
+                }).populate('sintoma', 'nome').lean();
+
+                const symptoms = consultaSintomas.map(cs => cs.sintoma.nome);
+
+                // Buscar nome do médico
+                let medicoName = 'Médico';
+                if (consulta.medico && consulta.medico.user) {
+                    const medicoUser = await require('../model/Users').findById(consulta.medico.user).select('nome').lean();
+                    if (medicoUser) {
+                        medicoName = medicoUser.nome;
+                    }
+                }
+
+                return {
+                    id: consulta._id.toString(),
+                    patientName: consulta.paciente?.nome || 'Paciente Desconhecido',
+                    patientNumber: `MED-${consulta._id.toString().slice(10)}`,
+                    date: consulta.data_hora.toISOString().split('T')[0],
+                    symptoms: symptoms.length > 0 ? symptoms : ['Nenhum sintoma registrado'],
+                    status: consulta.status,
+                    validatedBy: medicoName,
+                };
+            })
+        );
+
+
+        return res.status(200).json({
+            data: validatedReports,
+            message: 'Relatórios validados obtidos com sucesso'
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+async function getConsultaDetails(req, res, next) {
+    try {
+        let filter = { _id: req.params.id }
+        if (req.query.status)
+            filter = { status: { $in: req.query.status.split(",") } }
+
+
+        // Buscar consultas com status 'realizada' (validadas/aprovadas)
+        const consultas = await Consultas.find(filter).populate('paciente', 'nome altura peso data_nascimento documento')
+            .populate('medico', 'user')
+            .lean();
+
+        const qtd = await Consultas.countDocuments({ paciente: consultas[0].paciente._id });
+
+        // Formatar os dados conforme esperado pelo frontend
+        const validatedReports = await Promise.all(
+            consultas.map(async (consulta) => {
+                // Buscar sintomas associados à consulta
+                const consultaSintomas = await ConsultasSintomas.find({
+                    consulta: consulta._id
+                }).populate('sintoma', 'nome').lean();
+
+                const symptoms = consultaSintomas.map(cs => cs.sintoma.nome);
+
+                // Buscar nome do médico
+                let medicoName = 'Médico';
+                if (consulta.medico && consulta.medico.user) {
+                    const medicoUser = await require('../model/Users').findById(consulta.medico.user).select('nome').lean();
+                    if (medicoUser) {
+                        medicoName = medicoUser.nome;
+                    }
+                }
+
+                return {
+                    id: consulta._id.toString(),
+                    patientName: consulta.paciente?.nome || 'Paciente Desconhecido',
+                    height: consulta.paciente.altura,
+                    quantidade_consultas: qtd,
+                    weight: consulta.paciente.peso,
+                    data_consulta: consulta.data_hora,
+                    data_nascimento: consulta.paciente.data_nascimento,
+                    documento: consulta.paciente.documento,
+                    patientNumber: `MED-${consulta._id.toString().slice(10)}`,
+                    date: consulta.data_hora.toISOString().split('T')[0],
+                    symptoms: symptoms.length > 0 ? symptoms : ['Nenhum sintoma registrado'],
+                    status: consulta.status,
+                    validatedBy: medicoName,
+                };
+            })
+        );
+
+
+        return res.status(200).json({
+            data: validatedReports[0],
+            message: 'Relatórios validados obtidos com sucesso'
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+module.exports = { create, list, get, update, remove, approve, cancel, markAsDone, diagnose, getValidatedReports, getConsultaDetails };

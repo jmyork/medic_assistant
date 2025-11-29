@@ -7,8 +7,14 @@ const { validateObjectId } = require('../middleware/validators');
 // Listar consultas (apenas médicos e admins)
 router.get('/', authenticate, requireMedico, controllers.ConsultasController.list);
 
-// Criar consulta (apenas admins)
+// Criar consulta (apenas pacientes)
 router.post('/', authenticate, requirePaciente, controllers.ConsultasController.create);
+
+// Obter relatórios validados (apenas médicos e admins)
+// IMPORTANTE: Esta rota DEVE estar antes de /:id para não ser interceptada
+router.get('/reports', authenticate, requireMedico, controllers.ConsultasController.getValidatedReports);
+router.get('/reports/:id', authenticate, requireMedico, controllers.ConsultasController.getConsultaDetails);
+
 
 // Obter consulta específica (autenticado)
 router.get('/:id', authenticate, validateObjectId('id'), controllers.ConsultasController.get);

@@ -75,7 +75,7 @@ async function login(req, res, next) {
         const { email, password } = req.body;
         if (!email || !password) return res.status(400).json({ data: null, message: 'email e password são obrigatórios' });
 
-        const user = await Users.findOne({ email });
+        const user = await Users.findOne({ email })
         if (!user) return res.status(401).json({ data: null, message: 'Credenciais inválidas' });
 
         const match = await bcrypt.compare(password, user.password);
@@ -83,7 +83,15 @@ async function login(req, res, next) {
 
         const payload = { id: user._id, tipo: user.tipo };
         const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
-        return res.status(200).json({ data: { token }, message: 'Autenticado com sucesso' });
+        return res.status(200).json({
+            data: {
+                token, user: {
+                    nome: user.nome,
+                    email: user.email,
+                    tipo: user.tipo,
+                }
+            }, message: 'Autenticado com sucesso'
+        });
     } catch (err) { next(err); }
 }
 

@@ -4,13 +4,19 @@ const controllers = require('../controller');
 const { authenticate, requireMedico, requireAdmin, validateResourceOwnership } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validators');
 
+// Obter dados do paciente autenticado
+router.get('/patient/details/:patientId?', authenticate, controllers.PacientesController.getPatientData);
+
+// Obter histórico de sintomas do paciente autenticado
+router.get('/patient/history/:patientId', authenticate, controllers.PacientesController.getPatientHistory);
+
 // Listar pacientes (médicos e admins)
 router.get('/', authenticate, requireMedico, controllers.PacientesController.list);
 
-// Criar paciente (público ou admin)
+// Criar paciente (autenticado)
 router.post('/', authenticate, controllers.PacientesController.create);
 
-// Obter paciente (autenticado)
+// Obter paciente por ID (autenticado)
 router.get('/:id', authenticate, validateObjectId('id'), controllers.PacientesController.get);
 
 // Atualizar paciente (proprietário ou admin)

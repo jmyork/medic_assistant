@@ -1,5 +1,7 @@
 const Pacientes = require('../model/Pacientes');
 const Consultas = require('../model/Consultas');
+const ConsultaSintomas = require('../model/ConsultaSintomas');
+const Sintomas = require('../model/Sintomas');
 
 // Regras principais:
 // - nome é obrigatório
@@ -17,13 +19,91 @@ async function create(req, res, next) {
             if (existing) return res.status(409).json({ message: 'documento já existe' });
         }
         // verificar se já existe paciente associado ao user
-        if(await Pacientes.findOne({ user: req.user.id })) {
+        if (await Pacientes.findOne({ user: req.user.id })) {
             return res.status(409).json({ message: 'Paciente já associado a este utilizador' });
         }
 
-        const paciente = new Pacientes({...req.body, user: req.user.id });
+        const paciente = new Pacientes({ ...req.body, user: req.user.id });
         await paciente.save();
         res.status(201).json({ data: paciente, message: "Paciente criado com sucesso" });
+    } catch (err) {
+        next(err);
+    }
+}
+
+async function getPatientData(req, res, next) {
+    try {
+        let paciente;
+        // Buscar paciente do utilizador autenticado
+        if (req.params.patientId)
+            paciente = await Pacientes.findOne(req.params.patient).populate('user', 'email nome').lean();
+        else
+            paciente = await Pacientes.findOne({
+                $or: {
+                    documento: req.user.documento,
+                    documento_identificacao_tipo: req.user.documento_identificacao_tipo
+                }
+            }).populate('user', 'email nome').lean();
+
+        if (!paciente) {
+            return res.status(404).json({ data: null, message: 'Paciente não encontrado' });
+        }
+
+        // Formatar dados do paciente conforme esperado pelo frontend
+        const patientData = {
+            name: paciente.nome,
+            bi: paciente.documento_identificacao_tipo ? `${paciente.documento}${paciente.documento_identificacao_tipo}` : paciente.documento,
+            email: paciente.user?.email || '',
+            weight: paciente.peso ? `${paciente.peso} kg` : '',
+            height: paciente.altura ? `${paciente.altura} m` : '',
+            chronicDiseases: paciente.predisposicoes || [],
+            pacienteId: paciente._id,
+            dataNascimento: paciente.data_nascimento,
+            genero: paciente.genero,
+            contacto: paciente.contacto,
+            endereco: paciente.endereco
+        };
+
+        return res.status(200).json({ data: patientData, message: "Dados do paciente obtidos com sucesso" });
+    } catch (err) {
+        next(err);
+    }
+}
+
+async function getPatientHistory(req, res, next) {
+    try {
+        // Buscar paciente do utilizador autenticado
+        const paciente = await Pacientes.findOne({ user: req.params.patientId });
+
+        if (!paciente) {
+            return res.status(404).json({ data: null, message: 'Paciente não encontrado' });
+        }
+
+        // Buscar consultas do paciente
+        const consultas = await Consultas.find({ paciente: paciente._id }).sort({ data_hora: -1 }).lean();
+
+        // Para cada consulta, buscar os sintomas associados
+        const symptomsHistory = [];
+
+        for (const consulta of consultas) {
+            const consultaSintomas = await ConsultaSintomas.find({ consulta: consulta._id }).populate('sintoma', 'nome descricao').lean();
+
+            // Concatenar os nomes dos sintomas
+            const symptomsNames = consultaSintomas.map(cs => cs.sintoma.nome)
+
+            symptomsHistory.push({
+                id: consulta._id,
+                date: consulta.data_hora.toISOString().split('T')[0], // Formato YYYY-MM-DD
+                symptoms: symptomsNames || 'Sem sintomas registados',
+                intensity: consulta.resultado?.intensity || 'Não especificada', // Se houver intensity no resultado
+                status: consulta.status
+            });
+        }
+
+        return res.status(200).json({
+            data: symptomsHistory,
+            message: "Histórico de sintomas obtido com sucesso"
+        });
     } catch (err) {
         next(err);
     }
@@ -53,7 +133,7 @@ async function update(req, res, next) {
     try {
         const { id } = req.params;
         const updates = req.body;
-        
+
 
         if (updates.documento) {
             const other = await Pacientes.findOne({ documento: updates.documento, _id: { $ne: id } });
@@ -82,6 +162,7 @@ async function update(req, res, next) {
 //         next(err);
 //     }
 // };
+
 async function remove(req, res, next) {
     try {
         const { id } = req.params;
@@ -97,4 +178,4 @@ async function remove(req, res, next) {
     }
 }
 
-module.exports = { create, list, get, update, remove };
+module.exports = { create, getPatientData, getPatientHistory, list, get, update, remove };
