@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { api } from "@/services";
+import { getSintomaRequest, listSintomasRequest } from "@/api/requests";
 
 export function SymptomForm() {
   const router = useRouter();
@@ -65,7 +65,7 @@ export function SymptomForm() {
       setError(null);
       try {
         // (path: string, params?: Params, headers?: Record<string, string>)
-        const res = await api.get("/sintomas", { method: "GET" });
+        const res = await listSintomasRequest();
         if (!res.ok)
           throw new Error(`Erro ao carregar sintomas: ${res.status}`);
         const json = await res.json();

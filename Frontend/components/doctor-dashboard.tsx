@@ -104,6 +104,10 @@ export function DoctorDashboard() {
     (c) => c.status === "validated" && c.date === "2025-10-16",
   ).length
 
+  
+
+
+
   return (
     <div className="container max-w-6xl mx-auto p-4 md:p-6">
       {/* HEADER */}

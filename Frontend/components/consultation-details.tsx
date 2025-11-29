@@ -1,16 +1,17 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft, Search, Trash2, Plus } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Search, Trash2, Plus } from "lucide-react";
+import { getValidatedReportDetailsRequest } from "@/api/requests/consultas";
 
 const patientData = {
   name: "João Silva",
@@ -20,6 +21,7 @@ const patientData = {
   weight: "75 kg",
   height: "1.75 m",
   symptoms: ["Dor de Cabeça", "Febre", "Fadiga"],
+
   history: [
     { date: "2025-09-10", diagnosis: "Gripe", result: "Positivo" },
     { date: "2025-08-15", diagnosis: "Check-up", result: "Normal" },
@@ -28,47 +30,112 @@ const patientData = {
     { name: "Raio-X", date: "2025-10-15", result: "Normal" },
     { name: "Exame de Sangue", date: "2025-10-14", result: "Pendente" },
   ],
-}
+};
+type patientDataType = {
+  patientName: string;
+  patientNumber: string;
+  bi: string;
+  age: number;
+  data_consulta: Date;
+  quantidade_consultas: number;
+  date?: Date;
+  documento: string;
+  data_nascimento?: Date;
+  weight: string;
+  height: string;
+  symptoms: string[];
+  history: { date: string; diagnosis: string; result: string }[];
+  exams: { name: string; date: string; result: string }[];
+};
 
-export function ConsultationDetails({ consultationId }: { consultationId: string }) {
-  const router = useRouter()
+export function ConsultationDetails({
+  consultationId,
+}: {
+  consultationId: string;
+}) {
+  const router = useRouter();
 
-  const [opinion, setOpinion] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [exams, setExams] = useState(patientData.exams)
+  const [opinion, setOpinion] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [exams, setExams] = useState(patientData.exams);
   const [recommendations, setRecommendations] = useState<string[]>([
     "Repouso",
     "Hidratação",
     "Medicação para Febre",
-  ])
-  const [newExam, setNewExam] = useState("")
-  const [newRecommendation, setNewRecommendation] = useState("")
+  ]);
+  const [reports, setReports] = useState<patientDataType>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchReportDetails = async () => {
+      try {
+        setLoading(true);
+        const token =
+          typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+        if (!token) {
+          // setError("Token não encontrado. Por favor, faça login.");
+          return;
+        }
+
+        const response = await getValidatedReportDetailsRequest(
+          token,
+          consultationId
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          setReports(data.data || []);
+        } else {
+          console.error(
+            "Erro ao buscar relatórios validados:",
+            response.status
+          );
+          setError("Erro ao carregar relatórios validados");
+        }
+      } catch (err) {
+        console.error("Erro ao carregar relatórios:", err);
+        setError("Erro ao carregar relatórios validados");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportDetails();
+  }, []);
+  const [newExam, setNewExam] = useState("");
+  const [newRecommendation, setNewRecommendation] = useState("");
 
   const handleAddExam = () => {
-    if (newExam.trim() === "") return
-    setExams([...exams, { name: newExam, date: new Date().toISOString(), result: "Pendente" }])
-    setNewExam("")
-  }
+    if (newExam.trim() === "") return;
+    setExams([
+      ...exams,
+      { name: newExam, date: new Date().toISOString(), result: "Pendente" },
+    ]);
+    setNewExam("");
+  };
 
   const handleRemoveExam = (index: number) => {
-    setExams(exams.filter((_, i) => i !== index))
-  }
+    setExams(exams.filter((_, i) => i !== index));
+  };
 
   const handleAddRecommendation = () => {
-    if (newRecommendation.trim() === "") return
-    setRecommendations([...recommendations, newRecommendation])
-    setNewRecommendation("")
-  }
+    if (newRecommendation.trim() === "") return;
+    setRecommendations([...recommendations, newRecommendation]);
+    setNewRecommendation("");
+  };
 
   const handleRemoveRecommendation = (index: number) => {
-    setRecommendations(recommendations.filter((_, i) => i !== index))
-  }
+    setRecommendations(recommendations.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = () => {
     // Simulação de envio
-    alert("Pré-diagnóstico validado com sucesso!")
-    router.push("/doctor/dashboard")
-  }
+    alert("Pré-diagnóstico validado com sucesso!");
+    router.push("/doctor/dashboard");
+  };
 
   return (
     <div className="container max-w-6xl mx-auto p-4 md:p-6">
@@ -84,15 +151,14 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="text-lg">
-                  {patientData.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {""}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle>{patientData.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{patientData.number}</p>
+                <CardTitle>{reports?.patientName}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {reports?.patientNumber}
+                </p>
               </div>
             </div>
           </CardHeader>
@@ -100,19 +166,23 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">BI:</span>
-                <span className="ml-2 font-medium">{patientData.bi}</span>
+                <span className="ml-2 font-medium">{reports?.documento}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Idade:</span>
-                <span className="ml-2 font-medium">{patientData.age} anos</span>
+                <span className="ml-2 font-medium">
+                  {reports?.data_nascimento
+                    ? new Date(reports.data_nascimento).toLocaleDateString("pt-PT")
+                    : "N/A"}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Peso:</span>
-                <span className="ml-2 font-medium">{patientData.weight}</span>
+                <span className="ml-2 font-medium">{reports?.weight}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Altura:</span>
-                <span className="ml-2 font-medium">{patientData.height}</span>
+                <span className="ml-2 font-medium">{reports?.height}</span>
               </div>
             </div>
           </CardContent>
@@ -125,11 +195,15 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
           <CardContent className="space-y-3">
             <div>
               <p className="text-sm text-muted-foreground">Consultas Totais</p>
-              <p className="text-2xl font-bold">12</p>
+              <p className="text-2xl font-bold">{reports?.quantidade_consultas}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Última Consulta</p>
-              <p className="text-sm font-medium">15/09/2025</p>
+              <p className="text-sm font-medium">
+                {reports?.date
+                  ? new Date(reports.date).toLocaleDateString("pt-PT")
+                  : "N/A"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -161,8 +235,12 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
             <TabsContent value="symptoms" className="space-y-4 mt-4">
               <h3 className="font-semibold mb-3">Sintomas Reportados</h3>
               <div className="flex flex-wrap gap-2">
-                {patientData.symptoms.map((symptom) => (
-                  <Badge key={symptom} variant="secondary" className="px-4 py-2">
+                {reports?.symptoms.map((symptom) => (
+                  <Badge
+                    key={symptom}
+                    variant="secondary"
+                    className="px-4 py-2"
+                  >
                     {symptom}
                   </Badge>
                 ))}
@@ -214,9 +292,15 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
               <h3 className="font-semibold mb-3">Recomendações Médicas</h3>
               <div className="flex flex-wrap gap-2">
                 {recommendations.map((rec, index) => (
-                  <div key={index} className="flex items-center gap-2 border px-3 py-2 rounded-full">
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 border px-3 py-2 rounded-full"
+                  >
                     <span>{rec}</span>
-                    <button onClick={() => handleRemoveRecommendation(index)} className="text-red-500 text-sm">
+                    <button
+                      onClick={() => handleRemoveRecommendation(index)}
+                      className="text-red-500 text-sm"
+                    >
                       ×
                     </button>
                   </div>
@@ -254,5 +338,5 @@ export function ConsultationDetails({ consultationId }: { consultationId: string
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
