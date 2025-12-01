@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,38 +14,82 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Search, User, LogOut, FileText, AlertCircle, Stethoscope } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import {
+  Search,
+  User,
+  LogOut,
+  FileText,
+  AlertCircle,
+  Stethoscope,
+} from "lucide-react";
+import { getValidatedReportsRequest } from "@/api/requests/consultas";
 
 // --------------------- TYPES ---------------------
 type Consultation = {
-  id: number
-  patientName: string
-  patientNumber: string
-  symptoms: string[]
-  date: string
-  status: "pending_validation" | "validated"
-}
+  id: number;
+  patientName: string;
+  patientNumber: string;
+  symptoms: string[];
+  date: string;
+  status: "agendada" | "realizada" | "cancelada" | "aprovada" | "preliminar";
+};
 
 // --------------------- MOCK DATA ---------------------
-const consultations: Consultation[] = [
-  { id: 1, patientName: "João Silva", patientNumber: "MED-001", symptoms: ["Dor de Cabeça", "Febre"], date: "2025-10-16", status: "pending_validation" },
-  { id: 2, patientName: "Maria Santos", patientNumber: "MED-002", symptoms: ["Dor de Estômago", "Náusea"], date: "2025-10-16", status: "pending_validation" },
-  { id: 3, patientName: "Pedro Costa", patientNumber: "MED-003", symptoms: ["Tosse", "Fadiga"], date: "2025-10-15", status: "validated" },
-]
+// const consultations: Consultation[] = [
+//   {
+//     id: 1,
+//     patientName: "João Silva",
+//     patientNumber: "MED-001",
+//     symptoms: ["Dor de Cabeça", "Febre"],
+//     date: "2025-10-16",
+//     status: "pending_validation",
+//   },
+//   {
+//     id: 2,
+//     patientName: "Maria Santos",
+//     patientNumber: "MED-002",
+//     symptoms: ["Dor de Estômago", "Náusea"],
+//     date: "2025-10-16",
+//     status: "pending_validation",
+//   },
+//   {
+//     id: 3,
+//     patientName: "Pedro Costa",
+//     patientNumber: "MED-003",
+//     symptoms: ["Tosse", "Fadiga"],
+//     date: "2025-10-15",
+//     status: "validated",
+//   },
+// ];
 
 // --------------------- STATUS MAP ---------------------
 const statusMap = {
-  pending_validation: { label: "Por Validar", color: "bg-orange-100 text-orange-800" },
+  preliminar: {
+    label: "Por Validar",
+    color: "bg-orange-100 text-orange-800",
+  },
   validated: { label: "Validado", color: "bg-green-100 text-green-800" },
-}
+  agendada: { label: "Agendada", color: "bg-blue-100 text-blue-800" },
+  realizada: { label: "Realizada", color: "bg-gray-100 text-gray-800" },
+  cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
+  aprovada: { label: "Aprovada", color: "bg-purple-100 text-purple-800" },
+};
 
 // --------------------- PATIENT CARD ---------------------
-function PatientCard({ consultation, onClick }: { consultation: Consultation; onClick: () => void }) {
+function PatientCard({
+  consultation,
+  onClick,
+}: {
+  consultation: Consultation;
+  onClick: () => void;
+}) {
   return (
     <Card
       className={`cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-transform duration-200 ${
-        consultation.status === "pending_validation" ? "border-orange-200 bg-orange-50" : ""
+        consultation.status === "preliminar"
+          ? "border-orange-200 bg-orange-50"
+          : ""
       }`}
       onClick={onClick}
     >
@@ -63,7 +107,9 @@ function PatientCard({ consultation, onClick }: { consultation: Consultation; on
               </Avatar>
               <div>
                 <h3 className="font-semibold">{consultation.patientName}</h3>
-                <p className="text-sm text-muted-foreground">{consultation.patientNumber}</p>
+                <p className="text-sm text-muted-foreground">
+                  {consultation.patientNumber}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -75,7 +121,9 @@ function PatientCard({ consultation, onClick }: { consultation: Consultation; on
             </div>
           </div>
           <div className="text-right">
-            <Badge className={`${statusMap[consultation.status].color}`}>{statusMap[consultation.status].label}</Badge>
+            <Badge className={`${statusMap[consultation.status].color}`}>
+              {statusMap[consultation.status].label}
+            </Badge>
             <p className="text-sm text-muted-foreground mt-2">
               {new Date(consultation.date).toLocaleDateString("pt-PT")}
             </p>
@@ -83,30 +131,50 @@ function PatientCard({ consultation, onClick }: { consultation: Consultation; on
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // --------------------- DASHBOARD ---------------------
 export function DoctorDashboard() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
 
-  const handleConsultationClick = (id: number) => router.push(`/doctor/consultation/${id}`)
+  useEffect(() => {
+    document.title = "Dashboard do Médico - Medical Assistant";
+    const fetchConsultations = async () => {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const response = await getValidatedReportsRequest(token);
+        if (response.ok) {
+          const data = await response.json();
+          setConsultations(data.data || []);
+        } else {
+          console.error("Erro ao buscar consultações:", response.status);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar consultações:", err);
+      }
+    };
+    fetchConsultations();
+  }, []);
+  const handleConsultationClick = (id: number) =>
+    router.push(`/doctor/consultation/${id}`);
 
   const filteredConsultations = consultations.filter(
     (c) =>
       c.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.patientNumber.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+      c.patientNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const pendingCount = consultations.filter((c) => c.status === "pending_validation").length
+  const pendingCount = consultations.filter(
+    (c) => c.status === "preliminar"
+  ).length;
   const validatedTodayCount = consultations.filter(
-    (c) => c.status === "validated" && c.date === "2025-10-16",
-  ).length
-
-  
-
-
+    (c) =>
+      c.status === "aprovada" &&
+      c.date === new Date().toISOString().split("T")[0]
+  ).length;
 
   return (
     <div className="container max-w-6xl mx-auto p-4 md:p-6">
@@ -118,7 +186,11 @@ export function DoctorDashboard() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full relative"
+            >
               <User className="h-5 w-5" />
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
@@ -139,7 +211,10 @@ export function DoctorDashboard() {
               <FileText className="mr-2 h-4 w-4" /> Relatórios
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/login")} className="text-red-600">
+            <DropdownMenuItem
+              onClick={() => router.push("/login")}
+              className="text-red-600"
+            >
               <LogOut className="mr-2 h-4 w-4" /> Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -150,16 +225,22 @@ export function DoctorDashboard() {
       <div className="grid gap-6 md:grid-cols-3 mb-6">
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader className="pb-3 flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Relatórios Pendentes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Relatórios Pendentes
+            </CardTitle>
             <AlertCircle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{pendingCount}</div>
+            <div className="text-3xl font-bold text-orange-600">
+              {pendingCount}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Relatórios Validados Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Relatórios Validados Hoje
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{validatedTodayCount}</div>
@@ -167,7 +248,9 @@ export function DoctorDashboard() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pacientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total de Pacientes
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{consultations.length}</div>
@@ -201,5 +284,5 @@ export function DoctorDashboard() {
         ))}
       </div>
     </div>
-  )
+  );
 }
