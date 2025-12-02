@@ -123,3 +123,51 @@ export const resetPasswordRequest = async (
         throw e;
     }
 };
+
+export const getUserCountRequest = async (token: string) => {
+    try {
+        const response = await fetch(endpoint.getUserCount, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+        });
+        return response;
+    } catch (e) {
+        console.error("Erro ao obter contagem de utilizadores", e);
+        throw e;
+    }
+};
+
+export const getQtdConsultasRequest = async (token: string) => {
+    try {
+        const response = await fetch(endpoint.getQtdConsultas, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+        });
+        return response;
+    } catch (e) {
+        console.error("Erro ao obter quantidade de consultas", e);
+        throw e;
+    }
+};
+export const getQtdConsultasMesRequest = async (token: string) => {
+    try {
+        const response = await fetch(endpoint.getQtdConsultasMes, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+            },
+        });
+        return response;
+    } catch (e) {
+        console.error("Erro ao obter quantidade de consultas do mês", e);
+        throw e;
+    }
+};
+

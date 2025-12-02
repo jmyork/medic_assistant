@@ -203,7 +203,7 @@ export function DoctorDashboard() {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">Médico</p>
-                <p className="text-xs text-muted-foreground">Ordem: 12345</p>
+                <p className="text-xs text-muted-foreground">Ordem: {JSON.parse(localStorage.getItem("user") || "{}").id || "N/A"}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

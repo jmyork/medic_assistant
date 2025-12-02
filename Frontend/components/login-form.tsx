@@ -35,8 +35,6 @@ export function LoginForm() {
 
     const response = await loginRequest(email, password);
 
-    console.log("login response :", response);
-
     if (response.status === 200) {
       const { data } = await response.json();
       // console.log("Resposta do login:", response);
@@ -48,9 +46,6 @@ export function LoginForm() {
       setShowLoadingScreen(true);
       router.push("/patient/symptoms");
     } else {
-      console.log("email :", email);
-      console.log("password :", password);
-      console.log("Falha no login:", response.status);
       setErrorMessage("Credenciais inválidas. Tente novamente.");
     }
     // console.log(result);

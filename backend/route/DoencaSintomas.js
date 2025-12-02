@@ -7,5 +7,6 @@ router.post('/', controllers.DoencaSintomasController.create);
 router.get('/:id', controllers.DoencaSintomasController.get);
 router.put('/:id', controllers.DoencaSintomasController.update);
 router.delete('/:id', controllers.DoencaSintomasController.remove);
+router.get('/count/qtd-protocolos', controllers.DoencaSintomasController.getQtdProtocolos);
 
 module.exports = router;

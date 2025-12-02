@@ -86,6 +86,7 @@ async function login(req, res, next) {
         return res.status(200).json({
             data: {
                 token, user: {
+                    id: user._id,
                     nome: user.nome,
                     email: user.email,
                     tipo: user.tipo,
@@ -143,5 +144,6 @@ async function resetPassword(req, res, next) {
         return res.status(200).json({ data: null, message: 'Senha redefinida com sucesso' });
     } catch (err) { next(err); }
 }
+
 
 module.exports = { login, logout, register, requestPasswordReset, resetPassword };

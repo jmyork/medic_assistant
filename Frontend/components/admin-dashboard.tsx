@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,25 +10,80 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Users, FileText, Settings, BarChart, User, LogOut } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import {
+  Users,
+  FileText,
+  Settings,
+  BarChart,
+  User,
+  LogOut,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  getQtdConsultasMesRequest,
+  getQtdConsultasRequest,
+  getUserCountRequest,
+} from "@/api/requests/auth";
+import { getProtocolosDoencaSintomasRequest } from "@/api/requests/doenca";
 
 export function AdminDashboard() {
-  const router = useRouter()
+  const router = useRouter();
+  const [userCount, setUserCount] = useState();
+  const [protocolosCount, setProtocolosCount] = useState();
+  const [consultaQtdMes, setConsultaQtdMes] = useState();
+  const [consultaQtd, setConsultaQtd] = useState();
 
+  useEffect(() => {
+    const getPrimaryData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+        if (token && user.tipo !== "admin") {
+          router.push("/login");
+        }
+        const userCountResponse = await getUserCountRequest(
+          localStorage.getItem("token")!
+        );
+        const protocolosCountResponse =
+          await getProtocolosDoencaSintomasRequest(token!);
+        const consultasQtdMesResponse = await getQtdConsultasMesRequest(token!);
+        const consultasQtdResponse = await getQtdConsultasRequest(token!);
+
+        if (
+          userCountResponse.ok &&
+          protocolosCountResponse.ok &&
+          consultasQtdMesResponse.ok &&
+          consultasQtdResponse.ok
+        ) {
+          setUserCount((await userCountResponse.json()).data);
+          setConsultaQtd((await consultasQtdResponse.json()).data);
+          setConsultaQtdMes((await consultasQtdMesResponse.json()).data);
+          setProtocolosCount((await protocolosCountResponse.json()).data);
+        }
+      } catch (e: any) {
+        throw new Error(e);
+      }
+    };
+  }, []);
   const stats = [
-    { label: "Total de Utilizadores", value: "156", icon: Users },
-    { label: "Relatórios Gerados", value: "342", icon: FileText },
-    { label: "Protocolos Ativos", value: "28", icon: Settings },
-    { label: "Consultas Este Mês", value: "89", icon: BarChart },
-  ]
+    { label: "Total de Utilizadores", value: userCount, icon: Users },
+    { label: "Relatórios Gerados", value: consultaQtd, icon: FileText },
+    { label: "Protocolos Ativos", value: protocolosCount, icon: Settings },
+    { label: "Consultas Este Mês", value: consultaQtdMes, icon: BarChart },
+  ];
 
   return (
     <div className="container max-w-6xl mx-auto p-4 md:p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Painel de Administração</h1>
-          <p className="text-muted-foreground">Gestão do sistema de assistente médico</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Painel de Administração
+          </h1>
+          <p className="text-muted-foreground">
+            Gestão do sistema de assistente médico
+          </p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -40,7 +95,9 @@ export function AdminDashboard() {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">Administrador</p>
-                <p className="text-xs text-muted-foreground">admin@sistema.pt</p>
+                <p className="text-xs text-muted-foreground">
+                  admin@sistema.pt
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -49,7 +106,10 @@ export function AdminDashboard() {
               Configurações
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/login")} className="text-red-600">
+            <DropdownMenuItem
+              onClick={() => router.push("/login")}
+              className="text-red-600"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </DropdownMenuItem>
@@ -85,7 +145,10 @@ export function AdminDashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Registe novos utilizadores, atribua perfis e gerencie permissões
             </p>
-            <Button className="w-full" onClick={() => router.push("/admin/users")}>
+            <Button
+              className="w-full"
+              onClick={() => router.push("/admin/users")}
+            >
               Gerir Utilizadores
             </Button>
           </CardContent>
@@ -102,7 +165,10 @@ export function AdminDashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Crie e edite diretrizes médicas e algoritmos de análise
             </p>
-            <Button className="w-full" onClick={() => router.push("/admin/protocols")}>
+            <Button
+              className="w-full"
+              onClick={() => router.push("/admin/protocols")}
+            >
               Gerir Protocolos
             </Button>
           </CardContent>
@@ -116,7 +182,9 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">Visualize estatísticas e relatórios de uso do sistema</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Visualize estatísticas e relatórios de uso do sistema
+            </p>
             <Button className="w-full bg-transparent" variant="outline">
               Ver Relatórios
             </Button>
@@ -131,7 +199,9 @@ export function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground mb-4">Monitore acessos e atividades dos utilizadores</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Monitore acessos e atividades dos utilizadores
+            </p>
             <Button className="w-full bg-transparent" variant="outline">
               Ver Auditoria
             </Button>
@@ -139,5 +209,5 @@ export function AdminDashboard() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

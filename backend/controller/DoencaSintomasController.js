@@ -18,7 +18,7 @@ async function create(req, res, next) {
 async function list(req, res, next) {
     try {
         const all = await DoencasSintomas.find().lean();
-        res.json({data:all,message:"Lista de DoencasSintomas obtida com sucesso" });
+        res.json({ data: all, message: "Lista de DoencasSintomas obtida com sucesso" });
     } catch (err) {
         next(err);
     }
@@ -28,7 +28,7 @@ async function get(req, res, next) {
     try {
         const exame = await DoencasSintomas.findById(req.params.id).lean();
         if (!exame) return res.status(404).json({ message: 'Exame não encontrado' });
-        res.json({data:exame,message:"Exame obtido com sucesso" });
+        res.json({ data: exame, message: "Exame obtido com sucesso" });
     } catch (err) {
         next(err);
     }
@@ -38,7 +38,7 @@ async function update(req, res, next) {
     try {
         const updated = await DoencasSintomas.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!updated) return res.status(404).json({ message: 'Exame não encontrado' });
-        res.json({data:updated,message:"Exame atualizado com sucesso" });
+        res.json({ data: updated, message: "Exame atualizado com sucesso" });
     } catch (err) {
         next(err);
     }
@@ -54,4 +54,13 @@ async function remove(req, res, next) {
     }
 }
 
-module.exports = { create, list, get, update, remove };
+async function getQtdProtocolos(req, res, next) {
+    try {
+        const total = await DoencasSintomas.countDocuments();
+        res.json({ data: total, message: 'Quantidade de protocolos obtida com sucesso' });
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { create, list, get, update, remove, getQtdProtocolos };

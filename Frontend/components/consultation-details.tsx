@@ -11,7 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Search, Trash2, Plus } from "lucide-react";
-import { getValidatedReportDetailsRequest } from "@/api/requests/consultas";
+import {
+  consultaMarkAsDone,
+  getValidatedReportDetailsRequest,
+} from "@/api/requests/consultas";
 
 const patientData = {
   name: "João Silva",
@@ -32,6 +35,7 @@ const patientData = {
   ],
 };
 type patientDataType = {
+  id: string;
   patientName: string;
   patientNumber: string;
   bi: string;
@@ -131,9 +135,8 @@ export function ConsultationDetails({
     setRecommendations(recommendations.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    // Simulação de envio
-    alert("Pré-diagnóstico validado com sucesso!");
+  const markAsDone = (consultationId: string) => {
+    consultaMarkAsDone(localStorage.getItem("token") || "", consultationId);
     router.push("/doctor/dashboard");
   };
 
@@ -150,9 +153,7 @@ export function ConsultationDetails({
           <CardHeader>
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
-                <AvatarFallback className="text-lg">
-                  {""}
-                </AvatarFallback>
+                <AvatarFallback className="text-lg">{""}</AvatarFallback>
               </Avatar>
               <div>
                 <CardTitle>{reports?.patientName}</CardTitle>
@@ -172,7 +173,9 @@ export function ConsultationDetails({
                 <span className="text-muted-foreground">Idade:</span>
                 <span className="ml-2 font-medium">
                   {reports?.data_nascimento
-                    ? new Date(reports.data_nascimento).toLocaleDateString("pt-PT")
+                    ? new Date(reports.data_nascimento).toLocaleDateString(
+                        "pt-PT"
+                      )
                     : "N/A"}
                 </span>
               </div>
@@ -195,7 +198,9 @@ export function ConsultationDetails({
           <CardContent className="space-y-3">
             <div>
               <p className="text-sm text-muted-foreground">Consultas Totais</p>
-              <p className="text-2xl font-bold">{reports?.quantidade_consultas}</p>
+              <p className="text-2xl font-bold">
+                {reports?.quantidade_consultas}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Última Consulta</p>
@@ -331,7 +336,7 @@ export function ConsultationDetails({
               rows={6}
               className="mt-2"
             />
-            <Button onClick={handleSubmit} className="w-full">
+            <Button onClick={() => markAsDone(reports?.id!)} className="w-full">
               Validar Pré-Diagnóstico
             </Button>
           </div>

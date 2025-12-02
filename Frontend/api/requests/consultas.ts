@@ -256,3 +256,18 @@ export const getValidatedReportDetailsRequest = async (token: string, id: string
         throw e;
     }
 };
+export const consultaMarkAsDone = async (token: string, id: string) => {
+    try {
+        const response = await fetch(endpoint.consultaMarkAsDone(id), {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response;         
+    } catch (e) {
+        console.error("Erro ao marcar consulta como realizada", e);
+        throw e;
+    }
+}
