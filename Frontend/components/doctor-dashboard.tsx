@@ -139,6 +139,7 @@ export function DoctorDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [userOrder, setUserOrder] = useState("N/A");
 
   useEffect(() => {
     document.title = "Dashboard do Médico - Medical Assistant";
@@ -152,8 +153,12 @@ export function DoctorDashboard() {
         } else {
           console.error("Erro ao buscar consultações:", response.status);
         }
+
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        setUserOrder(user.id || "N/A");
       } catch (err) {
         console.error("Erro ao carregar consultações:", err);
+        setUserOrder("N/A");
       }
     };
     fetchConsultations();
@@ -203,7 +208,10 @@ export function DoctorDashboard() {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">Médico</p>
-                <p className="text-xs text-muted-foreground">Ordem: {JSON.parse(localStorage.getItem("user") || "{}").id || "N/A"}</p>
+                <p className="text-xs text-muted-foreground">
+                  Ordem:{" "}
+                  {userOrder}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

@@ -42,6 +42,13 @@ export function LoginForm() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       // Redirecionar com base no tipo de usuário
+      if (data.user.tipo === "paciente") {
+        router.push("/patient/symptoms");
+      } else if (data.user.tipo === "medico") {
+        router.push("/doctor/dashboard");
+      } else if (userType === "admin") {
+        router.push("/admin/dashboard");
+      }
       setUserType("patient");
       setShowLoadingScreen(true);
       router.push("/patient/symptoms");

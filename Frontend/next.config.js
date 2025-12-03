@@ -6,6 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  turbopack:{},
   webpack: (config, { isServer }) => {
     // Desativa o cache do Webpack para evitar problemas de memória
     config.cache = false;
